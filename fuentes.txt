@@ -1,0 +1,24 @@
+Como usar un boton por medio de pull down:
+https://www.youtube.com/watch?v=5vnW4U5Vj0k
+https://www.hackster.io/Ramji_Patel/raspberry-pi-pico-and-button-321059 (para uso general del boton)
+
+Funcionamiento del registro de desplazamiento:
+https://www.youtube.com/watch?v=8PvnC65E2XI
+https://www.instructables.com/The-74HC164-Shift-Register-and-your-Arduino/
+
+Datasheet 74HC164:
+https://www.ti.com/lit/ds/symlink/sn74hc164.pdf
+
+Diagrama de pines Raspberry Pi Pico W:
+https://www.alexdwilson.dev/learning-in-public/gpio-on-the-raspberry-pi-pico
+
+Uso de buzzer en MicroPython:
+https://www.youtube.com/watch?v=tqXARSYouLE
+
+Connexion a internet Pico W:
+https://projects.raspberrypi.org/en/projects/get-started-pico-w/3
+
+
+
+
+
