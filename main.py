@@ -1,24 +1,34 @@
+import network
+import socket
+from machine import Pin
 
-import tkinter as tk
-import requests
+# Connect to Wi-Fi
+ssid = 'YOUR_WIFI_NAME'
+password = 'YOUR_WIFI_PASSWORD'
 
-# Replace with the IP address printed by your Pico W
-PICO_IP = f"http://{input("ip:")}"
+wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
+wlan.connect(ssid, password)
 
-def send_command(command):
-    try:
-        requests.get(f"{PICO_IP}/{command}")
-    except Exception as e:
-        print("Connection Error:", e)
+while not wlan.isconnected():
+    pass
 
-# Tkinter GUI Setup
-root = tk.Tk()
-root.title("Pico W Wi-Fi Controller")
+print('Connected! IP address:', wlan.ifconfig()[0])
 
-btn_on = tk.Button(root, text="Turn LED ON", command=lambda: send_command("LED_ON"))
-btn_on.pack(pady=10)
+# Set up LED and Server
+led = Pin("LED", Pin.OUT)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(('', 80))
+s.listen(5)
 
-btn_off = tk.Button(root, text="Turn LED OFF", command=lambda: send_command("LED_OFF"))
-btn_off.pack(pady=10)
-
-root.mainloop()
+while True:
+    conn, addr = s.accept()
+    request = conn.recv(1024).decode()
+    
+    if 'LED_ON' in request:
+        led.value(1)
+    elif 'LED_OFF' in request:
+        led.value(0)
+        
+    conn.send('HTTP/1.1 200 OK\n\nOK')
+    conn.close()
