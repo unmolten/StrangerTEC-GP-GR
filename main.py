@@ -8,8 +8,8 @@ from machine import Pin, PWM
 
 
 # --- Pines y variables ---
-ssid = 'fpjgb'
-password = 'c@sh1848!'
+ssid = 'x'
+password = 'x'
 led = Pin(16, Pin.OUT)
 ledpico = Pin("LED", Pin.OUT)
 boton = Pin(15, Pin.IN, Pin.PULL_DOWN)
