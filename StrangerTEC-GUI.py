@@ -13,10 +13,16 @@ def send_command(command):
     if PICO_IP is None:
         return None
     try:
-        r = requests.get(f"{PICO_IP}/{command}", timeout=3)
+        r = requests.get(f"{PICO_IP}/{command}", timeout=10)
         return r.text
     except:
         return None
+
+def reproducir_frase(frase):
+    # envía la frase al Pico para que la reproduzca en morse
+    # los espacios se reemplazan por guion bajo en la URL
+    frase_url = frase.replace(' ', '_')
+    send_command(f"PLAY_FRASE_{frase_url}")
 
 # ───────────────────────────────────────────
 # MORSE
@@ -27,8 +33,8 @@ FRASES = ["SOS", "SI", "NO", "HOLA", "AYUDA", "FUEGO", "AGUA", "LISTO", "VAMOS",
 MORSE = {
     'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---',
     'K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-',
-    'U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..', '1':'.----','2':'..---','3':'...--','4':'....-','5':'.....',
-    '6':'-....','7':'--...','8':'---..','9':'----.','0':'-----','+':'.-.-.','-':'-.-.-',
+    'U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..','1':'.----','2':'..---','3':'...--',
+    '4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.','0':'-----','+':'.-.-.','-':'-.-.-',
 }
 MORSE_INV = {v: k for k, v in MORSE.items()}
 
@@ -51,7 +57,7 @@ def calcular_puntaje(frase, resultado):
 # ───────────────────────────────────────────
 
 nombres = ["", ""]
-UNIDAD  = 0.2  # se cambia según selección del usuario
+UNIDAD  = 0.2
 
 def pantalla_inicio():
     global UNIDAD
@@ -63,7 +69,6 @@ def pantalla_inicio():
     tk.Label(ventana, text="StrangerTEC", font=("Courier", 20, "bold")).pack(pady=(20, 5))
     tk.Label(ventana, text="─" * 38, fg="gray").pack(pady=5)
 
-    # IP
     frame_ip = tk.Frame(ventana)
     frame_ip.pack(pady=5)
     tk.Label(frame_ip, text="IP de la Pico W:").pack(side=tk.LEFT)
@@ -85,7 +90,6 @@ def pantalla_inicio():
     tk.Button(ventana, text="Conectar", command=conectar).pack(pady=3)
     tk.Label(ventana, text="─" * 38, fg="gray").pack(pady=5)
 
-    # Nombres
     label_j1 = tk.Label(ventana, text="Jugador 1: (sin nombre)")
     label_j1.pack()
     label_j2 = tk.Label(ventana, text="Jugador 2: (sin nombre)")
@@ -113,7 +117,6 @@ def pantalla_inicio():
     tk.Button(ventana, text="Jugador 2", command=lambda: pedir_nombre(2)).pack(pady=3)
     tk.Label(ventana, text="─" * 38, fg="gray").pack(pady=5)
 
-    # Selección de unidad
     tk.Label(ventana, text="Velocidad (unidad de tiempo):", font=("Courier", 9)).pack()
     unidad_var = tk.StringVar(value="A")
     frame_unidad = tk.Frame(ventana)
@@ -130,10 +133,10 @@ def pantalla_inicio():
             label_estado.config(text="Faltan nombres", fg="red")
             return
         UNIDAD = {"A": 0.2, "B": 0.3, "C": 0.5}[unidad_var.get()]
-        # manda la unidad al Pico en milisegundos
         send_command(f"SET_UNIDAD_{int(UNIDAD * 1000)}")
         ventana.destroy()
-        pantalla_juego(random.choice(FRASES))
+        frase = random.choice(FRASES)
+        pantalla_juego(frase)
 
     tk.Button(ventana, text="Iniciar Juego", font=("Courier", 11, "bold"), command=iniciar).pack(pady=15)
     ventana.mainloop()
@@ -143,11 +146,6 @@ def pantalla_inicio():
 # ───────────────────────────────────────────
 
 def pantalla_juego(frase):
-    # Umbrales según estándar morse:
-    # punto < 2u, raya >= 2u
-    # separación entre símbolos: 1u (no medimos esto, solo entre letras)
-    # separación entre letras: 3u
-    # separación entre palabras: 7u
     UMBRAL_PUNTO_RAYA  = UNIDAD * 2
     UMBRAL_FIN_LETRA   = UNIDAD * 3
     UMBRAL_FIN_PALABRA = UNIDAD * 7
@@ -159,13 +157,25 @@ def pantalla_juego(frase):
     tk.Label(ventana, text="Transmití esta frase en morse:", font=("Courier", 11)).pack(pady=(15, 2))
     tk.Label(ventana, text=frase, font=("Courier", 24, "bold"), fg="#cc0000").pack()
 
+    # botón para que el Pico reproduzca la frase en el buzzer
+    def enviar_a_pico():
+        btn_reproducir.config(state=tk.DISABLED, text="Reproduciendo...")
+        ventana.after(100, lambda: [
+            reproducir_frase(frase),
+            btn_reproducir.config(state=tk.NORMAL, text="▶ Reproducir en Pico")
+        ])
+
+    btn_reproducir = tk.Button(ventana, text="▶ Reproducir en Pico",
+                                font=("Courier", 10), command=enviar_a_pico)
+    btn_reproducir.pack(pady=4)
+
     tk.Label(ventana, text="─" * 45, fg="gray").pack(pady=6)
 
     # Teclado
     tk.Label(ventana, text=f"{nombres[1]} — teclado (ESPACIO)", font=("Courier", 10, "bold")).pack()
-    label_simbolos      = tk.Label(ventana, text="", font=("Courier", 12), fg="orange")
+    label_simbolos     = tk.Label(ventana, text="", font=("Courier", 12), fg="orange")
     label_simbolos.pack()
-    label_resultado_kb  = tk.Label(ventana, text="", font=("Courier", 16, "bold"))
+    label_resultado_kb = tk.Label(ventana, text="", font=("Courier", 16, "bold"))
     label_resultado_kb.pack()
 
     tk.Label(ventana, text="─" * 45, fg="gray").pack(pady=6)
@@ -206,7 +216,7 @@ def pantalla_juego(frase):
     def confirmar_palabra():
         confirmar_letra()
         if not texto_kb["v"].endswith(" "):
-            texto_kb["v"] += " " 
+            texto_kb["v"] += " "
         label_resultado_kb.config(text=texto_kb["v"])
 
     def revisar_silencio():
